@@ -106,6 +106,7 @@ func Signup() gin.HandlerFunc {
 
 		if emailCount > 0 || phoneCount > 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "this email or phone number already exists"})
+			return
 		}
 
 		user.Created_at, err = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
@@ -274,11 +275,13 @@ func GetUsers() gin.HandlerFunc {
 			}},
 		}
 
-		result, err := userCollection.Aggregate(ctx, mongo.Pipeline{matchStage, groupStage, projectStage})
+		result, aggregateErr := userCollection.Aggregate(ctx, mongo.Pipeline{matchStage, groupStage, projectStage})
 		defer cancel()
 
-		if err != nil {
+		if aggregateErr != nil {
+			log.Panic(aggregateErr)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "error occured while listing user items"})
+			return
 		}
 
 		// a slice of 'bson.M'
